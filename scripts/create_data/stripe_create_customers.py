@@ -1,3 +1,7 @@
+# TODO: Set this up to run every 2 minutes
+# TODO: Create more transactions for existing customers
+
+
 import stripe
 import os
 from faker import Faker
