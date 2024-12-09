@@ -80,7 +80,7 @@ def fetch_products_with_inventory():
                 f"Available: {item.get('available', 'N/A')}"
             )
         # Write each record as its own JSON line
-        with open("shopify_inventory_and_products.json", "w") as f:
+        with open("../../data/shopify_inventory_and_products.json", "w") as f:
             for record in results:
                 f.write(json.dumps(record) + "\n")
 
@@ -139,7 +139,9 @@ def fetch_orders_last_day():
             results.append(order_data)
 
         # Write the order data to a JSON file
-        with open("shopify_orders.json", "w") as f:
+        # Write the order data to a JSON file in the data directory
+        print(os.getcwd())
+        with open("../../data/shopify_orders.json", "w") as f:
             for record in results:
                 f.write(json.dumps(record) + "\n")
 
@@ -165,21 +167,24 @@ except Exception as e:
 
 # TODO schedule the job to run every X period of time
 
-
-def job():
-    print("Running scheduled job...")
-
-    fetch_products_with_inventory()
-    print("Fetched products with inventory.")
-
-    fetch_orders_last_day()
-    print("Fetched orders from the last 24 hours.")
+fetch_products_with_inventory()
+fetch_orders_last_day()
 
 
-# Schedule the job to run hourly
-schedule.every().minute.do(job)
+# def job():
+#     print("Running scheduled job...")
 
-# Run the scheduler
-while True:
-    schedule.run_pending()
-    time.sleep(60)  # Check every minute for scheduled tasks
+#     fetch_products_with_inventory()
+#     print("Fetched products with inventory.")
+
+#     fetch_orders_last_day()
+#     print("Fetched orders from the last 24 hours.")
+
+
+# # Schedule the job to run hourly
+# schedule.every().minute.do(job)
+
+# # Run the scheduler
+# while True:
+#     schedule.run_pending()
+#     time.sleep(60)  # Check every minute for scheduled tasks
