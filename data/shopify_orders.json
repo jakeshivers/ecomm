@@ -1,0 +1,26 @@
+{"order_id": 6242524528924, "created_at": "2024-12-09T16:36:20-05:00", "status": "paid", "total": "3789.75", "customer_name": "Jake Shivers"}
+{"order_id": 6242517254428, "created_at": "2024-12-09T16:29:36-05:00", "status": "paid", "total": "1025.00", "customer_name": "Jake Shivers"}
+{"order_id": 6242516795676, "created_at": "2024-12-09T16:29:12-05:00", "status": "paid", "total": "2145.85", "customer_name": "Jake Shivers"}
+{"order_id": 6242515124508, "created_at": "2024-12-09T16:27:43-05:00", "status": "paid", "total": "1649.90", "customer_name": "Karine Ruby"}
+{"order_id": 6242512732444, "created_at": "2024-12-09T16:25:28-05:00", "status": "paid", "total": "1415.90", "customer_name": "Russell Winfield"}
+{"order_id": 6242407383324, "created_at": "2024-12-09T14:58:30-05:00", "status": "paid", "total": "1800.00", "customer_name": "Jake Shivers"}
+{"order_id": 6242404663580, "created_at": "2024-12-09T14:56:09-05:00", "status": "paid", "total": "5674.90", "customer_name": "Ayumu Hirano"}
+{"order_id": 6242402205980, "created_at": "2024-12-09T14:53:58-05:00", "status": "paid", "total": "2189.85", "customer_name": "N/A"}
+{"order_id": 6242397389084, "created_at": "2024-12-09T14:49:31-05:00", "status": "paid", "total": "1509.90", "customer_name": "N/A"}
+{"order_id": 6242392670492, "created_at": "2024-12-09T14:45:17-05:00", "status": "paid", "total": "2795.80", "customer_name": "N/A"}
+{"order_id": 6242386575644, "created_at": "2024-12-09T14:40:24-05:00", "status": "paid", "total": "4775.80", "customer_name": "N/A"}
+{"order_id": 6242381037852, "created_at": "2024-12-09T14:35:38-05:00", "status": "paid", "total": "1289.91", "customer_name": "Russell Winfield"}
+{"order_id": 6242380972316, "created_at": "2024-12-09T14:35:35-05:00", "status": "paid", "total": "2699.76", "customer_name": "N/A"}
+{"order_id": 6242380906780, "created_at": "2024-12-09T14:35:32-05:00", "status": "paid", "total": "885.95", "customer_name": "N/A"}
+{"order_id": 6242380841244, "created_at": "2024-12-09T14:35:30-05:00", "status": "paid", "total": "885.95", "customer_name": "N/A"}
+{"order_id": 6242327167260, "created_at": "2024-12-09T13:53:00-05:00", "status": "paid", "total": "1329.90", "customer_name": "N/A"}
+{"order_id": 6242317074716, "created_at": "2024-12-09T13:46:14-05:00", "status": "paid", "total": "7889.85", "customer_name": "N/A"}
+{"order_id": 6242304426268, "created_at": "2024-12-09T13:35:53-05:00", "status": "paid", "total": "3257.85", "customer_name": "N/A"}
+{"order_id": 6242266972444, "created_at": "2024-12-09T13:05:51-05:00", "status": "paid", "total": "2629.95", "customer_name": "Karine Ruby"}
+{"order_id": 6242264613148, "created_at": "2024-12-09T13:03:53-05:00", "status": "paid", "total": "600.00", "customer_name": "Karine Ruby"}
+{"order_id": 6242256847132, "created_at": "2024-12-09T12:57:43-05:00", "status": "refunded", "total": "3359.90", "customer_name": "Karine Ruby"}
+{"order_id": 6242255307036, "created_at": "2024-12-09T12:56:29-05:00", "status": "partially_refunded", "total": "3654.95", "customer_name": "Jake Shivers"}
+{"order_id": 6242252226844, "created_at": "2024-12-09T12:53:53-05:00", "status": "paid", "total": "1299.95", "customer_name": "Karine Ruby"}
+{"order_id": 6242249605404, "created_at": "2024-12-09T12:51:37-05:00", "status": "paid", "total": "749.95", "customer_name": "Karine Ruby"}
+{"order_id": 6242249441564, "created_at": "2024-12-09T12:51:25-05:00", "status": "paid", "total": "949.95", "customer_name": "Ayumu Hirano"}
+{"order_id": 6241332232476, "created_at": "2024-12-08T20:50:49-05:00", "status": "paid", "total": "629.95", "customer_name": "Jake Shivers"}
