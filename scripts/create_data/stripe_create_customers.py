@@ -53,7 +53,7 @@ def create_payment_intent(customer_id, payment_method_id):
     # Create a PaymentIntent (charge) for the customer using the attached payment method
     intent = stripe.PaymentIntent.create(
         amount=fake.random_int(
-            min=900000, max=50000000
+            min=9000, max=500000
         ),  # Amount in cents (e.g., $5 to $200)
         currency="usd",
         customer=customer_id,

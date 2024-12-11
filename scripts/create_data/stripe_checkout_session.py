@@ -2,13 +2,19 @@ import stripe
 from flask import Flask, jsonify, request
 import os
 from dotenv import load_dotenv
-import subprocess
+import uuid
+import random
 
-# Load environment variables (you should have your Stripe API key here)
+# Load environment variables
 load_dotenv()
 
 # Set Stripe API key
 stripe.api_key = os.getenv("STRIPE_API_KEY")
+
+app = Flask(__name__)
+
+# Webhook secret from Stripe Dashboard
+WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 
 def generate_random_metadata():
@@ -52,25 +58,34 @@ def trigger_checkout_session():
         )
 
         print(f"Created session ID: {session.id}")
-
-        # Simulate the checkout.session.completed event using Stripe CLI
-        result = subprocess.run(
-            [
-                "stripe",
-                "trigger",
-                "checkout.session.completed",
-                "--add",
-                f"id={session.id}",
-            ],
-            capture_output=True,
-            text=True,
-        )
-
-        print(f"CLI Output: {result.stdout}")
+        return session
 
     except Exception as e:
         print(f"Error: {e}")
+        return None
+
+
+@app.route("/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get("Stripe-Signature")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, WEBHOOK_SECRET)
+    except ValueError as e:
+        return "Invalid payload", 400
+    except stripe.error.SignatureVerificationError as e:
+        return "Invalid signature", 400
+
+    # Handle checkout.session.completed event
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        print(f"Webhook received for session: {session['id']}")
+        print(f"Metadata: {session.get('metadata')}")
+
+    return jsonify(success=True)
 
 
 if __name__ == "__main__":
-    trigger_checkout_session()
+    # Start Flask server for webhook testing
+    app.run(port=5000)
