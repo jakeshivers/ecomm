@@ -1,9 +1,9 @@
 import os
-import shopify
 import logging
 import time
 import json
 from dotenv import load_dotenv
+import shopify
 
 load_dotenv()
 
@@ -48,12 +48,12 @@ def get_fulfillment_orders(order_id):
     logging.info(f"Fetching fulfillment orders for order {order_id} at path: {path}")
     resp = handle_api_call(shopify.ShopifyResource.connection.get, path)
     if resp and resp.code == 200:
-        data = json.loads(resp.body.decode('utf-8'))
-        fos = data.get('fulfillment_orders', [])
+        data = json.loads(resp.body.decode("utf-8"))
+        fos = data.get("fulfillment_orders", [])
         logging.info(f"Found {len(fos)} fulfillment order(s) for order {order_id}.")
         return fos
     else:
-        code = resp.code if resp else 'No response'
+        code = resp.code if resp else "No response"
         logging.error(f"Failed to fetch fulfillment orders. Code: {code}")
         return []
 
@@ -161,7 +161,3 @@ def main():
 
     # After fulfilling, try closing the order
     close_order(ORDER_ID)
-
-
-if __name__ == "__main__":
-    main()

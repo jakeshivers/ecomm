@@ -1,9 +1,9 @@
-import stripe
 from flask import Flask, jsonify, request
 import os
 from dotenv import load_dotenv
 import uuid
 import random
+import stripe
 
 # Load environment variables
 load_dotenv()

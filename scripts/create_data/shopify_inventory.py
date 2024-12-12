@@ -1,11 +1,11 @@
 import os
-import shopify
 import logging
 import time
 import json
 from dotenv import load_dotenv
 from itertools import islice
 from pyactiveresource.connection import Error
+import shopify
 
 # Load environment variables from .env file
 load_dotenv()
