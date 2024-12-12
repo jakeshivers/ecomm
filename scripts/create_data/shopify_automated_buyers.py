@@ -1,10 +1,7 @@
 import shopify
 import random
 from dotenv import load_dotenv
-import datetime
-import json
 import os
-import time
 
 load_dotenv()
 
@@ -141,7 +138,3 @@ def main():
     # Fulfill the order if possible
     if fulfill_order(order):
         close_order(order)
-
-
-if __name__ == "__main__":
-    main()

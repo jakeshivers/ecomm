@@ -1,11 +1,10 @@
-import json
-from kafka import KafkaProducer
-import stripe
 import os
+import logging
+import json
 from dotenv import load_dotenv
 from faker import Faker
-from dotenv import load_dotenv
-import logging
+import stripe
+from kafka import KafkaProducer
 
 # Load environment variables
 load_dotenv()
