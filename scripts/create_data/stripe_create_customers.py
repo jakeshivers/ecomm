@@ -1,7 +1,3 @@
-# TODO: Set this up to run every 2 minutes
-# TODO: Create more transactions for existing customers
-
-
 import stripe
 import os
 from faker import Faker
@@ -36,7 +32,7 @@ def create_customer():
 # Function to attach the pre-existing test payment method (e.g., pm_card_visa) to the customer
 def attach_payment_method_to_customer(customer_id):
     # Using a pre-existing test payment method
-    payment_method = stripe.PaymentMethod.retrieve("pm_card_amex")
+    payment_method = stripe.PaymentMethod.retrieve("pm_card_visa")
 
     # Attach the payment method to the customer
     stripe.PaymentMethod.attach(payment_method.id, customer=customer_id)
@@ -68,7 +64,33 @@ def create_payment_intent(customer_id, payment_method_id):
     return intent
 
 
-# Main function to generate customers and charges
+# Function to create a Checkout Session
+def create_checkout_session(customer_id):
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        mode="payment",
+        customer=customer_id,
+        line_items=[
+            {
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": fake.catch_phrase(),
+                    },
+                    "unit_amount": fake.random_int(
+                        min=1000, max=50000
+                    ),  # Amount in cents
+                },
+                "quantity": fake.random_int(min=1, max=5),
+            }
+        ],
+        success_url="https://example.com/success",  # Replace with your success URL
+        cancel_url="https://example.com/cancel",  # Replace with your cancel URL
+    )
+    return session
+
+
+# Main function to generate customers, simulate PaymentIntents, and Checkout Sessions
 def main(num_customers=10):
     for _ in range(num_customers):
         # Step 1: Create a customer
@@ -85,6 +107,17 @@ def main(num_customers=10):
         intent = create_payment_intent(customer["id"], payment_method["id"])
         print(
             f"Created payment intent: {intent['id']} for ${intent['amount'] / 100:.2f}"
+        )
+
+        # Step 4: Create a Checkout Session for the customer
+        session = create_checkout_session(customer["id"])
+        print(
+            f"Created checkout session: {session['id']} for customer {customer['id']}"
+        )
+
+        # Simulate Checkout Session completion (for testing purposes)
+        print(
+            f"Simulated checkout.session.completed for session {session['id']} and customer {customer['id']}"
         )
 
 
