@@ -1,9 +1,9 @@
 import os
+import shopify
 import logging
 import time
 import json
 from dotenv import load_dotenv
-import shopify
 
 load_dotenv()
 
@@ -161,3 +161,7 @@ def main():
 
     # After fulfilling, try closing the order
     close_order(ORDER_ID)
+
+
+if __name__ == "__main__":
+    main()
