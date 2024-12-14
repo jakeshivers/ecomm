@@ -1,15 +1,12 @@
-"""
-    ORDERS FETCHING AND LOGGING SCRIPT
-    If you want to see new orders, you need to manually change them from
-
-"""
-
 import os
 import json
 import logging
 import shopify
 from dotenv import load_dotenv
 import boto3
+from datetime import datetime, timedelta
+import pytz
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -60,9 +57,9 @@ def initialize_shopify_session():
 
 
 # Write order data to JSONL file
-def write_to_jsonl_file(order_data, output_file="../../data/shopify_orders.jsonl"):
+def write_to_jsonl_file(order_data, output_file):
     try:
-        with open(output_file, "a") as file:
+        with open(output_file, "w") as file:
             file.write(json.dumps(order_data) + "\n")
         logger.info(
             f"Order {order_data.get('id', 'unknown')} written to {output_file}."
@@ -71,89 +68,118 @@ def write_to_jsonl_file(order_data, output_file="../../data/shopify_orders.jsonl
         logger.error(f"Failed to write order data: {e}")
 
 
-# Fetch all orders from Shopify
-def fetch_all_orders():
-    logger.info("Fetching all orders from Shopify...")
+# Fetch orders from Shopify by date, including pagination handling
+def fetch_orders_by_date(date_str):
+    logger.info(f"Fetching orders for {date_str}...")
     orders_fetched = 0
-    last_order_id = None  # Cursor for pagination
+    orders = []
 
-    while True:
-        try:
-            # Define query parameters
-            query_params = {"limit": 50}
-            if last_order_id:
-                query_params["since_id"] = last_order_id
+    # Parse the input date string and set the start and end datetime in UTC
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+    utc_timezone = pytz.utc
 
-            # Fetch orders
-            orders = shopify.Order.find(**query_params)
-            if not orders:
-                logger.info("No more orders to fetch.")
+    # Define the start and end of the day in UTC
+    start_date_utc = utc_timezone.localize(
+        datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0)
+    )  # Start of the day in UTC
+    end_date_utc = start_date_utc + timedelta(days=1)  # Start of the next day in UTC
+
+    # Convert to ISO 8601 format
+    start_date = start_date_utc.isoformat()
+    end_date = end_date_utc.isoformat()
+
+    # Log the date range being used
+    logger.info(f"Using date range: {start_date} to {end_date}")
+
+    # Generate output file path based on the provided date
+    output_file = f"../../data/shopify_orders_{date_str}.jsonl"
+
+    try:
+        # Define query parameters
+        query_params = {
+            "limit": 50,
+            "created_at_min": start_date,
+            "created_at_max": end_date,
+        }
+
+        # Fetch the first page of orders
+        orders_page = shopify.Order.find(**query_params)
+        logger.info(f"Fetched {len(orders_page)} orders on the first page.")
+
+        while orders_page:
+            for order in orders_page:
+                order_data = (
+                    json.loads(order.to_json()) if hasattr(order, "to_json") else order
+                )
+                orders.append(order_data)  # Collect all orders for debugging
+                write_to_jsonl_file(order_data, output_file)
+                orders_fetched += 1
+                logger.info(f"Order fetched: ID {order_data.get('id')}")
+
+            # Check if there is a next page
+            if not orders_page.has_next_page():
                 break
 
-            # Process and save orders
-            for order_obj in orders:
-                try:
-                    # Handle nested structure
-                    order_data = (
-                        json.loads(order_obj.to_json())
-                        if hasattr(order_obj, "to_json")
-                        else order_obj
-                    )
+            orders_page = orders_page.next_page()
+            logger.info(f"Fetched next page of orders.")
 
-                    # Check for nested 'order' key and handle accordingly
-                    if "order" in order_data:
-                        order_data = order_data["order"]
+        logger.info(f"Total orders fetched for {date_str}: {orders_fetched}")
+    except Exception as e:
+        logger.error(f"Error fetching orders: {e}")
 
-                    # Validate the presence of the 'id' field
-                    if "id" not in order_data:
-                        logger.warning(f"Order missing 'id': {order_data}")
-                        continue
-
-                    write_to_jsonl_file(order_data)
-                    last_order_id = order_data["id"]  # Update the cursor
-                    orders_fetched += 1
-
-                except Exception as inner_e:
-                    logger.error(f"Error processing an order: {inner_e}")
-
-            logger.info(
-                f"Fetched and logged {len(orders)} orders. Total so far: {orders_fetched}."
-            )
-
-            # Break if fewer than the maximum batch size is returned
-            if len(orders) < 50:
-                logger.info("Reached the last page of orders.")
-                break
-
-        except Exception as e:
-            logger.error(f"Error fetching orders: {e}")
-            break
-
-    logger.info(f"Total orders fetched and logged: {orders_fetched}")
+    # Log all orders fetched for debugging
+    logger.debug(f"All orders fetched for {date_str}: {json.dumps(orders, indent=2)}")
 
 
 # Function to upload file to S3
 def upload_to_s3(local_file_path, bucket_name, s3_key):
+    # Check if the local file exists
+    if not os.path.exists(local_file_path):
+        logger.error(f"Local file {local_file_path} does not exist.")
+        return
 
     try:
         s3_client = boto3.client("s3")
         s3_client.upload_file(local_file_path, bucket_name, s3_key)
-        print(f"File successfully uploaded to S3: s3://{bucket_name}/{s3_key}")
+        logger.info(f"File successfully uploaded to S3: s3://{bucket_name}/{s3_key}")
     except NoCredentialsError:
-        print("Error: No AWS credentials found.")
+        logger.error("Error: No AWS credentials found.")
     except ClientError as e:
-        print(f"Error uploading to S3: {e}")
+        logger.error(f"Error uploading to S3: {e}")
+
+
+if order_data:
+    print(f"Order Data: {json.dumps(order_data, indent=2)}")
+else:
+    print(f"Order {order_id} could not be retrieved.")
 
 
 # Main function
 def main():
-    initialize_shopify_session()
-    fetch_all_orders()
-    # Upload the local file to S3
-    local_file_path = "../../data/shopify_orders.jsonl"
-    bucket_name = "capstone-shopify"
-    s3_key = "shopify_orders.jsonl"
+    if len(sys.argv) != 2:
+        logger.error("Please provide a date in yyyy-mm-dd format.")
+        sys.exit(1)
 
+    date_str = sys.argv[1]
+    print(date_str)
+
+    # Validate the input date format
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        logger.error(
+            "Incorrect date format. Please provide a date in yyyy-mm-dd format."
+        )
+        sys.exit(1)
+
+    # Initialize session and fetch orders for the given date
+    initialize_shopify_session()
+    fetch_orders_by_date(date_str)
+
+    # Upload the local file to S3
+    local_file_path = f"../../data/shopify_orders_{date_str}.jsonl"
+    bucket_name = "capstone-shopify"
+    s3_key = f"shopify_orders_{date_str}.jsonl"  # Use the same date in the S3 file key
     upload_to_s3(local_file_path, bucket_name, s3_key)
 
 
