@@ -1,7 +1,6 @@
 """
     ORDERS FETCHING AND LOGGING SCRIPT
-    If you want to see new orders, you need to manually change them from
-
+    Fetch Shopify orders and save them to a file with the passed date in the file name.
 """
 
 import os
@@ -10,12 +9,16 @@ import logging
 import shopify
 from dotenv import load_dotenv
 import boto3
+import sys
+from datetime import datetime, timedelta
+import pytz
 
 # Load environment variables
 load_dotenv()
 
 # Import exceptions from botocore
 from botocore.exceptions import NoCredentialsError, ClientError
+from datetime import datetime, timedelta
 
 # Shopify API credentials
 SHOPIFY_STORE_NAME = os.getenv("SHOPIFY_STORE_NAME")
@@ -23,32 +26,22 @@ SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_PASSWORD")
 
 # Create log directory if it doesn't exist
 log_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "logs"))
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-    print(f"Directory created at: {log_dir}")  # Debugging statement
-else:
-    print(f"Directory already exists at: {log_dir}")  # Debugging statement
-
+os.makedirs(log_dir, exist_ok=True)
 
 # Define log file path
 log_file_path = os.path.join(log_dir, "fetch_and_log_orders.log")
-print(f"Log file path: {log_file_path}")  # Debugging statement
 
 # Configure logging
-try:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(log_file_path),
-            logging.StreamHandler(),
-        ],
-    )
-    logger = logging.getLogger(__name__)
-    logger.info("Logging initialized successfully.")
-except Exception as e:
-    print(f"Error initializing logging: {e}")
-    raise
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(log_file_path),
+        logging.StreamHandler(),
+    ],
+)
+logger = logging.getLogger(__name__)
+logger.info("Logging initialized successfully.")
 
 
 # Initialize Shopify session
@@ -60,8 +53,16 @@ def initialize_shopify_session():
 
 
 # Write order data to JSONL file
-def write_to_jsonl_file(order_data, output_file="../../data/shopify_orders.jsonl"):
+def write_to_jsonl_file(order_data, output_file):
     try:
+        # Check if the file exists and delete it if this is the first write
+        if not hasattr(write_to_jsonl_file, "file_checked"):
+            if os.path.exists(output_file):
+                os.remove(output_file)
+                logger.info(f"Existing file {output_file} deleted.")
+            # Mark as checked to avoid deleting on subsequent writes
+            write_to_jsonl_file.file_checked = True
+
         with open(output_file, "a") as file:
             file.write(json.dumps(order_data) + "\n")
         logger.info(
@@ -72,10 +73,23 @@ def write_to_jsonl_file(order_data, output_file="../../data/shopify_orders.jsonl
 
 
 # Fetch all orders from Shopify
-def fetch_all_orders():
-    logger.info("Fetching all orders from Shopify...")
+def fetch_all_orders(date_str, output_file):
+
     orders_fetched = 0
     last_order_id = None  # Cursor for pagination
+
+    logger.info(f"Fetching all orders for date: {date_str}...")
+
+    # Parse and set the date range in the store's local timezone
+    store_timezone = pytz.timezone(
+        "America/Denver"
+    )  # Replace with your store's timezone
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+
+    start_datetime_local = store_timezone.localize(
+        datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0)
+    )
+    end_datetime_local = start_datetime_local + timedelta(days=1)
 
     while True:
         try:
@@ -84,8 +98,24 @@ def fetch_all_orders():
             if last_order_id:
                 query_params["since_id"] = last_order_id
 
+            # Parse the input date string and set the date range
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            created_at_min = start_datetime_local.astimezone(pytz.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            )
+            created_at_max = end_datetime_local.astimezone(pytz.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            )
+            print(
+                f"Using UTC date range: created_at_min={created_at_min}, created_at_max={created_at_max}"
+            )
+
             # Fetch orders
-            orders = shopify.Order.find(**query_params)
+            orders = shopify.Order.find(
+                limit=250,
+                created_at_min=created_at_min,
+                created_at_max=created_at_max,
+            )
             if not orders:
                 logger.info("No more orders to fetch.")
                 break
@@ -109,7 +139,7 @@ def fetch_all_orders():
                         logger.warning(f"Order missing 'id': {order_data}")
                         continue
 
-                    write_to_jsonl_file(order_data)
+                    write_to_jsonl_file(order_data, output_file)
                     last_order_id = order_data["id"]  # Update the cursor
                     orders_fetched += 1
 
@@ -134,7 +164,6 @@ def fetch_all_orders():
 
 # Function to upload file to S3
 def upload_to_s3(local_file_path, bucket_name, s3_key):
-
     try:
         s3_client = boto3.client("s3")
         s3_client.upload_file(local_file_path, bucket_name, s3_key)
@@ -146,15 +175,33 @@ def upload_to_s3(local_file_path, bucket_name, s3_key):
 
 
 # Main function
+# Main function
 def main():
-    initialize_shopify_session()
-    fetch_all_orders()
-    # Upload the local file to S3
-    local_file_path = "../../data/shopify_orders.jsonl"
-    bucket_name = "capstone-shopify"
-    s3_key = "shopify_orders.jsonl"
+    if len(sys.argv) != 2:
+        logger.error("Please provide a date in yyyy-mm-dd format.")
+        sys.exit(1)
 
-    upload_to_s3(local_file_path, bucket_name, s3_key)
+    date_str = sys.argv[1]
+
+    # Validate the input date format
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        logger.error(
+            "Incorrect date format. Please provide a date in yyyy-mm-dd format."
+        )
+        sys.exit(1)
+
+    output_file = f"../../data/shopify_orders_{date_str}.jsonl"
+
+    initialize_shopify_session()
+    fetch_all_orders(date_str, output_file)  # Pass both arguments
+
+    if os.path.exists(output_file):
+        # Upload the local file to S3
+        bucket_name = "capstone-shopify"
+        s3_key = f"shopify_orders_{date_str}.jsonl"
+        upload_to_s3(output_file, bucket_name, s3_key)
 
 
 if __name__ == "__main__":
