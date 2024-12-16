@@ -31,7 +31,7 @@ services:
       - kestra-data:/app/storage
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/kestra-wd:/tmp/kestra-wd
-      - ./python:/app/python
+      - ../data:/app/data
       - ../scripts/generate_json:/app/python_scripts
 
     env_file:
