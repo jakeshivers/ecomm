@@ -175,7 +175,6 @@ def upload_to_s3(local_file_path, bucket_name, s3_key):
 
 
 # Main function
-# Main function
 def main():
     if len(sys.argv) != 2:
         logger.error("Please provide a date in yyyy-mm-dd format.")
@@ -192,7 +191,11 @@ def main():
         )
         sys.exit(1)
 
-    output_file = f"../../data/shopify_orders_{date_str}.jsonl"
+    # Ensure the output directory exists
+    data_dir = os.path.abspath("../../data")
+    os.makedirs(data_dir, exist_ok=True)
+
+    output_file = os.path.join(data_dir, f"shopify_orders_{date_str}.jsonl")
 
     initialize_shopify_session()
     fetch_all_orders(date_str, output_file)  # Pass both arguments
